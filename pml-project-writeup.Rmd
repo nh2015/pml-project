@@ -1,0 +1,117 @@
+---
+title: "Practical Machine Learning - Final project write up"
+author: "Nirmal Hasan"
+date: "June 21, 2015"
+output: html_document
+---
+
+## Preliminary analysis
+
+Substantial time was first spent on reading the article published by the original 
+authors and on reviewing the data set provided. 
+
+Key observations:
+  
+1. Authors discuss their sampling methodology (sliding window of various lengths)
+but window length was not readily identifiable from the data
+
+    + Data Decision 1: Window length was not considered to be a relevant parameter and 
+    data from all windows was pooled into a single data set for the final model 
+    development
+    
+      
+    
+2. Data set contains raw sensor data, computed data (roll/pitch/yaw) and various
+summary statistics in addition to various identifiers such as user, time stamp
+etc. 
+
+    + Data decision 2: Summary statistics carry the risk of estimate errors with 
+    small samples. It was not immediately apparent what the real-world sample size 
+    might be so all summary statistics data was excluded for final model development
+    + Data decision 3: Identifier columns were excluded for final model development
+    since these are not meaningful predictors
+    
+      
+    
+3. Sensor data exists as raw readings (x/y/z axis readings from arm,belt,forearm 
+and dumbell) as well as in aggregate form (total acceleration etc.)
+
+    + Data decision 4: Derivation of aggregate sensor data was not identifiable
+    and so were excluded for final model development, keeping only the raw
+    sensor readings
+    
+      
+  
+4. Computed data (roll/pitch/yaw) are more intuitive than raw sensor x/y/z 
+readings
+
+    + Data decision 5: Roll/Pitch/Yaw data was retained for final model 
+    development
+    
+      
+    
+## Model development and finalization
+
+1. Based on the preceding analysis, "pml-training" data set was first trimmed down to 49 columns from 
+the original 160: 36 columns of raw sensor readings, 12 columns of roll/pitch/yaw 
+computations and the "classe" column (the "trimmed data")
+
+    + This had the added benefit of eliminating all the blank and NA data
+    
+      
+    
+2. Three seperate Random Forest models were considered
+ 
+    + Model 1: Using only the raw sensor readings as the features
+    + Model 2: Using only the roll/pitch/yaw data as features
+    + Model 3: Using both raw sensor readings as well as roll/pitch/yaw data
+    as features
+    
+      
+    
+3. For each model, the trimmed data was 
+
+    1. Further trimmed to include only the data columns relevant for that model
+    2. Then partitioned into a training and test data set
+      
+    
+4. FOr each model
+
+    1. A Random Forest was created first with default parameters
+    2. Two key parameter values -- *mtry* and *ntree* - were varied to a few 
+    different values (this was not exhaustive - about 4-6 different value
+    combinations were tried for each model) and the version with the lowest 
+    reported OOB error rate was chosen as the final version for that model type
+    
+    ```{r echo=FALSE}
+    fitRes <- rbind(c("Sensor only",4,500,"1.25%"),c("Roll/pitch/yaw only",4,500,"1.04%"),c("Sensor and Roll/pitch/yaw",6,2000,"0.41%"))
+    colnames(fitRes) <- c("Features","mtry Value","ntree Value","OOB Error")
+    rownames(fitRes) <- c("Model 1", "Model 2", "Model 3")
+    data.frame(fitRes)
+    ```
+ 
+ 
+   
+5. Comparing the reported OOB error rate between the three models, Model 3 
+appeared to be the best predictor. 
+  
+6. Each of the final model versions were then used to predict outcomes on the 
+test data set (created from trimmed data derived from "pml-training.csv"). 
+
+  
+7. Model 3 outperformed both the other models and was chosen as the final model. 
+
+
+    ```{r echo=FALSE}
+    predRes <- rbind(c("Sensor only","1.25%","98.62%"),c("Roll/pitch/yaw only","1.04%","98.83%"),c("Sensor and Roll/pitch/yaw","0.41%","99.68%"))
+    colnames(predRes) <- c("Features","OOB Error","Test Data Accuracy")
+    rownames(predRes) <- c("Model 1", "Model 2", "Model 3")
+    data.frame(predRes)
+    
+    ```
+
+8. For the final project submission (i.e., predicting outcomes on the "pml-testing.csv" data 
+set) the data set was first trimmed to include only the raw sensor data and the 
+Roll/pitch/Yaw data and prediction then performed using Model 3
+
+    
